@@ -1,0 +1,22 @@
+# Fix line endings on Windows
+init:
+  - git config --global core.autocrlf true
+environment:
+  matrix:
+    - nodejs_version: "8.9.0"
+platform:
+  - x86
+  - x64
+install:
+  - ps: Install-Product node $env:nodejs_version
+  - npm cache clean --force
+  - npm install
+test_script:
+  # Output useful info for debugging.
+  - node --version
+  - npm --version
+  # Run the test
+  - cmd: node_modules/.bin/istanbul cover node_modules/mocha/bin/_mocha -- -R dot
+build: off
+matrix:
+  fast_finish: true
