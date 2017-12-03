@@ -7,22 +7,24 @@ var TemperatureRangeChecker = require('../src/temperature-container-range-checke
 
 describe('TemperatureRangeChecker', function() {
   var temperatureRangeChecker;
-  var sandbox;
   var createMessagesSpy;
+  var sandbox = sinon.sandbox.create();
+  var clock = sandbox.useFakeTimers();
+  var lcdPrint = sandbox.spy();
 
-  before(function() {
-    sandbox = sinon.sandbox.create();
-  });
-
-  beforeEach(function(){
+  before(function(){
+    sandbox.stub(console, 'info');
+    sandbox.stub(five, 'LCD').callsFake(() => { return { print: lcdPrint }; });
     temperatureRangeChecker = new TemperatureRangeChecker();
   });
 
   afterEach(function() {
+    clock.reset();
     sandbox.reset();
   });
 
   after(function(){
+    clock.restore();
     sandbox.restore();
   });
 
@@ -50,7 +52,6 @@ describe('TemperatureRangeChecker', function() {
 
   describe('#startPolling', function(){
     var piezoPlaySpy;
-    var clock;
 
     before(function() {
       sandbox.spy(global, 'setInterval');
@@ -63,6 +64,7 @@ describe('TemperatureRangeChecker', function() {
         isPlaying: false,
         play: piezoPlaySpy
       };
+
       sandbox.stub(temperatureRangeChecker, 'piezo').value(piezoStub);
 
       temperatureRangeChecker.startPolling();
@@ -75,8 +77,6 @@ describe('TemperatureRangeChecker', function() {
     describe('When the temperature is up to the maximum limit', function(){
 
       before(function() {
-        clock = sandbox.useFakeTimers();
-
         sandbox.stub(temperatureRangeChecker, 'temperatureSensor').value({
           celsius: CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MAXIMUM + 1
         });
@@ -87,43 +87,14 @@ describe('TemperatureRangeChecker', function() {
         clock.tick(CONFIG.INTERVAL);
       });
 
-      afterEach(function(){
-        clock.reset();
-      });
-
-      after(function(){
-        clock.restore();
-      });
-
       it('should trigger piezo sensor alarm', function(){
         piezoPlaySpy.calledOnce.should.be.true;
       });
 
-    });
-
-    describe('When the temperature is NOT up to the maximum limit', function(){
-
-      beforeEach(function() {
-        clock = sandbox.useFakeTimers();
-
-        sandbox.stub(temperatureRangeChecker, 'temperatureSensor').value({
-          celsius: CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MAXIMUM - 1
-        });
-
-        temperatureRangeChecker.startPolling();
-        clock.tick(CONFIG.INTERVAL);
-      });
-
-      afterEach(function(){
-        clock.restore();
-      });
-
-      after(function(){
-        clock.restore();
-      });
-
-      it('should NOT trigger piezo sensor alarm', function(){
-        piezoPlaySpy.calledOnce.should.be.false;
+      it('should print message in LCD display', function(){
+        lcdPrint.calledOnce.should.be.true;
+        console.info.firstCall.args.should.be.eql(['Above to the limit: 31']);
+        lcdPrint.firstCall.args.should.be.eql(['Above to the limit: 31']);
       });
 
     });
@@ -131,8 +102,6 @@ describe('TemperatureRangeChecker', function() {
     describe('When the temperature is lower to the minimum limit', function(){
 
       beforeEach(function() {
-        clock = sandbox.useFakeTimers();
-
         sandbox.stub(temperatureRangeChecker, 'temperatureSensor').value({
           celsius: CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MINIMUM - 1
         });
@@ -140,46 +109,39 @@ describe('TemperatureRangeChecker', function() {
         clock.tick(CONFIG.INTERVAL);
       });
 
-      afterEach(function(){
-        clock.restore();
-      });
-
-      after(function(){
-        clock.restore();
-      });
-
       it('should trigger piezo sensor alarm', function(){
         piezoPlaySpy.calledOnce.should.be.true;
       });
 
+      it('should print message in LCD display', function(){
+        lcdPrint.calledOnce.should.be.true;
+        console.info.firstCall.args.should.be.eql(['Below to the limit: 9']);
+        lcdPrint.firstCall.args.should.be.eql(['Below to the limit: 9']);
+      });
+
     });
 
-    describe('When the temperature is NOT lower to the minimum limit', function(){
+    describe('When the temperature is in the acceptable range', function(){
 
       before(function() {
-        clock = sandbox.useFakeTimers();
-
         sandbox.stub(temperatureRangeChecker, 'temperatureSensor').value({
-          celsius: CONFIG.TEMPERATURE_RANGE_CHECKER.MINIMUM + 1
+          celsius: CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MINIMUM + 1
         });
       });
 
       beforeEach(function() {
-
         temperatureRangeChecker.startPolling();
         clock.tick(CONFIG.INTERVAL);
       });
 
-      afterEach(function(){
-        clock.restore();
-      });
-
-      after(function(){
-        clock.restore();
-      });
-
       it('should NOT trigger piezo sensor alarm', function(){
         piezoPlaySpy.calledOnce.should.be.false;
+      });
+
+      it('should print message in LCD display', function(){
+        lcdPrint.calledOnce.should.be.true;
+        console.info.firstCall.args.should.be.eql(['Current temperature: 11']);
+        lcdPrint.firstCall.args.should.be.eql(['Current temperature: 11']);
       });
 
     });

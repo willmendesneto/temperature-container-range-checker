@@ -5,6 +5,7 @@ var intervalId = null;
 class TemperatureRangeChecker {
   constructor() {
     this.piezo = new five.Piezo(3);
+    this.lcd = new five.LCD({ pins: [7, 8, 9, 10, 11, 12] });
     this.temperatureSensor = new five.Thermometer({
       pin: CONFIG.TEMPERATURE_RANGE_CHECKER.PIN,
       toCelsius: function(rawVoltage) {
@@ -24,9 +25,10 @@ class TemperatureRangeChecker {
 
   startPolling() {
     var self = this;
+    let message = '';
     intervalId = setInterval(function() {
-      var isTemperatureAboveTheMaximum = self.temperatureSensor.celsius <= CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MAXIMUM;
-      var isTemperatureBelowTheMinimum = self.temperatureSensor.celsius >= CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MINIMUM;
+      var isTemperatureAboveTheMaximum = self.temperatureSensor.celsius >= CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MAXIMUM;
+      var isTemperatureBelowTheMinimum = self.temperatureSensor.celsius <= CONFIG.TEMPERATURE_RANGE_CHECKER.LIMIT.MINIMUM;
       if (isTemperatureAboveTheMaximum && !self.piezo.isPlaying) {
 
         self.piezo.play({
@@ -36,8 +38,7 @@ class TemperatureRangeChecker {
           ],
           tempo: 200
         });
-
-        console.log('Above to the limit:', self.temperatureSensor.celsius);
+        message = `Above to the limit: ${self.temperatureSensor.celsius}`;
       } else if (isTemperatureBelowTheMinimum && !self.piezo.isPlaying) {
         self.piezo.play({
           song: [
@@ -47,11 +48,13 @@ class TemperatureRangeChecker {
           tempo: 200
         });
 
-        console.log('Below to the limit:', self.temperatureSensor.celsius);
+        message = `Below to the limit: ${self.temperatureSensor.celsius}`;
       } else {
-        console.log('Current temperature:', self.temperatureSensor.celsius);
+        message = `Current temperature: ${self.temperatureSensor.celsius}`;
       }
 
+      console.info(message);
+      self.lcd.print(message);
     }, CONFIG.INTERVAL);
   }
 }

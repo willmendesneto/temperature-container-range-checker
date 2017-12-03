@@ -2,4 +2,5 @@
 --recursive
 --require test/spec-helper.js
 --exit
+--timeout=5000
 --check-leaks
