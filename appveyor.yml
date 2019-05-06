@@ -3,7 +3,7 @@ init:
   - git config --global core.autocrlf true
 environment:
   matrix:
-    - nodejs_version: "8.9.0"
+    - nodejs_version: "10.9.0"
 platform:
   - x86
   - x64

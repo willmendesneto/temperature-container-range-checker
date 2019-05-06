@@ -3,7 +3,7 @@ os:
   - linux
   - osx
 node_js:
-  - '8.9.0'
+  - '10.9.0'
 before_script:
   - 'npm install'
 
